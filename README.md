@@ -11,12 +11,15 @@ with open('yourFileName, mode='rb') as file:
 Then process the fileContent with:
 
 1) the fileHeader class:
+
 myFileHeader = fileHeader(fileContent)
 
 2) Then feed the result to the imageHeader class:
+
 myImageHeader = imageHeader(fileContent,myFileHeader)
 
 3) Now you can read the image with:
+
 myImage = readUview(fileContent,myFileHeader,myImageHeader)
 
 Now myImage is an image in numpy format.
