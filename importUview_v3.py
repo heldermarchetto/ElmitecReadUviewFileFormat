@@ -6,19 +6,25 @@ Created on Mon Jan 18 12:46:01 2016
 
 """
 
-import time
 import struct
 import numpy as np
+import matplotlib.pyplot as plt  #only necessary to display images in python
+
+# "dat" files from Uview contain a file header and each image has its own image header.
+# This version only deals with single images.
+
+#class that reads the file header
 
 class fileHeader():
     def __init__(self, fc, verbose=False):
-        posGen = (i for i, e in enumerate(fc) if e == 0)
-        stPos = 0
-        endPos = next(posGen)
-        self.UK_id = "".join(map(chr, fc[stPos:endPos]))
+        
+        #must supply the file contents (fc). These are read with the open command in 'rb' mode
+        
+        self.UK_id = "".join(map(chr, fc[0:fc.index(0)]))
         self.UK_size         = int.from_bytes(fc[20:22], byteorder='little')
         self.UK_version      = int.from_bytes(fc[22:24], byteorder='little')
         self.UK_bitsPerPixel = int.from_bytes(fc[24:26], byteorder='little')
+
         if self.UK_version >= 8:
             self.UK_cameraBitsPerPixel = int.from_bytes(fc[26:28], byteorder='little')
             self.MCPDiameterInPixels   = int.from_bytes(fc[28:30], byteorder='little')
@@ -30,7 +36,7 @@ class fileHeader():
             self.MCPDiameterInPixels   = voidNr
             self.hBinning              = voidNr
             self.vBinning              = voidNr
-        #8 bytes are spared!
+
         if self.UK_version >= 2:
             self.imageWidth  = int.from_bytes(fc[40:42], byteorder='little')
             self.imageHeight = int.from_bytes(fc[42:44], byteorder='little')
@@ -40,12 +46,15 @@ class fileHeader():
             self.imageWidth  = voidNr
             self.imageHeight = voidNr
             self.nrImages    = voidNr
+
         if self.UK_version >= 7:
             self.attachedRecipeSize = int.from_bytes(fc[46:48], byteorder='little')
         else:
             self.attachedRecipeSize = int(0)
+
         self.hasRecipe = self.attachedRecipeSize > 0
         self.fixedRecipeSize = 128
+
         if self.hasRecipe:
             self.headerSize = 104+128
         else:
@@ -69,34 +78,37 @@ class fileHeader():
 
 class imageHeader():
     def __init__(self, fc, fh, verbose=False):
-        filePointer = fh.headerSize
-        self.imageHeadersize    = int.from_bytes(fc[filePointer   :filePointer+ 2], byteorder='little')
-        self.version            = int.from_bytes(fc[filePointer+ 2:filePointer+ 4], byteorder='little')
-        self.colorScaleLow      = int.from_bytes(fc[filePointer+ 4:filePointer+ 6], byteorder='little')
-        self.colorScaleHigh     = int.from_bytes(fc[filePointer+ 6:filePointer+ 8], byteorder='little')
-        self.imageTime          = int.from_bytes(fc[filePointer+ 8:filePointer+16], byteorder='little')
-        self.maskXShift         = int.from_bytes(fc[filePointer+16:filePointer+18], byteorder='little')
-        self.maskYShift         = int.from_bytes(fc[filePointer+18:filePointer+20], byteorder='little')
-        self.rotateMask         = int.from_bytes(fc[filePointer+20:filePointer+22], byteorder='little', signed=False)
-        self.attachedMarkupSize = int.from_bytes(fc[filePointer+22:filePointer+24], byteorder='little')
+        fp = fh.headerSize   #file pointer
+        self.imageHeadersize    = int.from_bytes(fc[fp   :fp+ 2], byteorder='little')
+        self.version            = int.from_bytes(fc[fp+ 2:fp+ 4], byteorder='little')
+        self.colorScaleLow      = int.from_bytes(fc[fp+ 4:fp+ 6], byteorder='little')
+        self.colorScaleHigh     = int.from_bytes(fc[fp+ 6:fp+ 8], byteorder='little')
+        self.imageTime          = int.from_bytes(fc[fp+ 8:fp+16], byteorder='little')
+        self.maskXShift         = int.from_bytes(fc[fp+16:fp+18], byteorder='little')
+        self.maskYShift         = int.from_bytes(fc[fp+18:fp+20], byteorder='little')
+        self.rotateMask         = int.from_bytes(fc[fp+20:fp+22], byteorder='little', signed=False)
+        self.attachedMarkupSize = int.from_bytes(fc[fp+22:fp+24], byteorder='little')
         self.hasAttachedMarkup = self.attachedMarkupSize != 0
+        
         if self.hasAttachedMarkup:
             self.attachedMarkupSize = 128*((self.attachedMarkupSize//128)+1)
-        self.spin               = int.from_bytes(fc[filePointer+24:filePointer+26], byteorder='little')
-        self.LEEMDataVersion    = int.from_bytes(fc[filePointer+26:filePointer+28], byteorder='little')
-        filePointer = filePointer+28
+        
+        self.spin               = int.from_bytes(fc[fp+24:fp+26], byteorder='little')
+        self.LEEMDataVersion    = int.from_bytes(fc[fp+26:fp+28], byteorder='little')
+        fp = fp+28
+        
         if self.version > 5:
-            self.LEEMData          = struct.unpack('240c',fc[filePointer:filePointer+240])
-            filePointer = filePointer+240
-            self.appliedProcessing = fc[filePointer]
-            self.grayAdjustZone    = fc[filePointer+1]
-            self.backgroundvalue   = int.from_bytes(fc[filePointer+2:filePointer+4], byteorder='little', signed=False)
-            self.desiredRendering  = fc[filePointer+4]
-            self.desired_rotation_fraction = fc[filePointer+5]
-            self.rendering_argShort  = int.from_bytes(fc[filePointer+6:filePointer+8], byteorder='little')
-            self.rendering_argFloat  = struct.unpack('f',fc[filePointer+8:filePointer+12])[0]
-            self.desired_rotation    = int.from_bytes(fc[filePointer+12:filePointer+14], byteorder='little')
-            self.rotaion_offset      = int.from_bytes(fc[filePointer+14:filePointer+16], byteorder='little')
+            self.LEEMData          = struct.unpack('240c',fc[fp:fp+240])
+            fp = fp+240
+            self.appliedProcessing = fc[fp]
+            self.grayAdjustZone    = fc[fp+1]
+            self.backgroundvalue   = int.from_bytes(fc[fp+2:fp+4], byteorder='little', signed=False)
+            self.desiredRendering  = fc[fp+4]
+            self.desired_rotation_fraction = fc[fp+5]
+            self.rendering_argShort  = int.from_bytes(fc[fp+6:fp+8], byteorder='little')
+            self.rendering_argFloat  = struct.unpack('f',fc[fp+8:fp+12])[0]
+            self.desired_rotation    = int.from_bytes(fc[fp+12:fp+14], byteorder='little')
+            self.rotaion_offset      = int.from_bytes(fc[fp+14:fp+16], byteorder='little')
             #spare 4
         else:
             voidNr = int(0)
@@ -130,16 +142,18 @@ def readUview(fc, fh, ih):
     return np.reshape(struct.unpack(str(fh.imageWidth*fh.imageHeight)+'H',fc[totalHeaderSize:]), (fh.imageHeight, fh.imageWidth))
 
 
+#usage example
 #get file name
-datFileName = r'K:\Data\SMART-2\2019\0507_HM_MP_TS_FU-Berlin\20190507a001.dat'
+datFileName = r'K:\Path\To\Your\dat\File\myFile.dat'
 
+#read the file contents
 with open(datFileName, mode='rb') as file: # b is important -> binary
     fileContent = file.read()
 
+#read the headers
 fh = fileHeader(fileContent)
 ih = imageHeader(fileContent,fh)
+#read the image
 img = readUview(fileContent, fh, ih)
-
-import matplotlib.pyplot as plt
+#show the image
 plt.imshow(img, cmap=plt.cm.gray)
-
