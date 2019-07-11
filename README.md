@@ -1,27 +1,12 @@
 # ElmitecReadUviewFileFormat
 Import Uview files in Python
 
-These procedures can be used to read uview file formats (.dat).
+This class (readUview) can be used to read uview file formats (.dat).
 
-First read the file data as binary with:
+See testReadUview.py to see how to use it.
 
-with open('yourFileName, mode='rb') as file:
-    fileContent = file.read()
-
-Then process the fileContent with:
-
-1) the fileHeader class:
-
-myFileHeader = fileHeader(fileContent)
-
-2) Then feed the result to the imageHeader class:
-
-myImageHeader = imageHeader(fileContent,myFileHeader)
-
-3) Now you can read the image with:
-
-myImage = readUview(fileContent,myFileHeader,myImageHeader)
-
-Now myImage is an image in numpy format.
+Important note:
+Copy the file readUview in the directory of your script. This way you can import it as a module: "import readUview as ru".
+If you want to keep things clean, I can package readUview, so that you don't have to copy it around. Let me know.
 
 Please send any comments, bugs or requests to me. Feel free to join/improve the python code.
