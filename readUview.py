@@ -20,6 +20,12 @@ class readUviewClass():
     def __init__(self) -> None:
         """Initializes the readUview object by reading the file contents"""
 
+    def __repr__(self):
+        try:
+            return str("Filename = %s\nimgSize = (%i,%i)" %(self.fn, self.imageWidth, self.imageHeight))
+        except AttributeError:
+            return str("Object not defined")
+
     def getImage(self, fn) -> np.ndarray:
         """Returns the uview images as numpy array"""
         self.fn = fn
